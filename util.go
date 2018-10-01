@@ -13,6 +13,12 @@ import (
 	"github.com/spf13/viper"
 )
 
+func printLol() {
+	log.Println("lol")
+}
+
+var interval *uint
+
 // Whether we are in development mode or not
 var dev *bool
 
@@ -78,6 +84,9 @@ func parseOptions() {
 	nomail = flag.Bool("nomail", false, "Use this option to disable the email notifications")
 	dev = flag.Bool("dev", false, "Use this option to use the script in development mode : nothing will be done for real")
 	logs := flag.Bool("logs", false, "Use this option to enable the logfile")
+
+	// my code
+	interval = flag.Uint("interval", 0, "Use this option to follow like and comment every N hours")
 
 	flag.Parse()
 
@@ -223,4 +232,39 @@ func buildReport() {
 
 	// Sends the report to the email in the config file, if the option is enabled
 	send(reportAsString, true)
+}
+
+//start function on the interval
+func setInterval(someFunc func(), Hours uint) chan bool {
+
+	someFunc()
+	// How often to fire the passed in function
+	// in hours
+	interval := time.Duration(Hours) * time.Hour
+
+	// Setup the ticket and the channel to signal
+	// the ending of the interval
+	ticker := time.NewTicker(interval)
+	stop := make(chan bool)
+
+	// Put the selection in a go routine
+	// so that the for loop is none blocking
+	go func() {
+		for {
+
+			select {
+			case <-ticker.C:
+				someFunc()
+			case <-stop:
+				ticker.Stop()
+				return
+			}
+
+		}
+	}()
+
+	// We return the channel so we can pass in
+	// a value to it to clear the interval
+	return stop
+
 }

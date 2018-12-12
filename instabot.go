@@ -24,7 +24,9 @@ func main() {
 		} else { // From interval
 
 			// Start interval
-			stop := setInterval(loopTags, *interval)
+
+			stop := make(chan bool)
+			go setInterval(loopTags, *interval, stop)
 
 			// Stop control
 			for {
@@ -40,5 +42,7 @@ func main() {
 
 			}
 		}
+	} else if *findBloger {
+		findBlogers()
 	}
 }

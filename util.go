@@ -19,6 +19,19 @@ func printLol() {
 
 var interval *uint
 
+// Find blogers
+
+var findBloger *bool
+
+// count
+var countBlogers *uint
+
+// max\min followers
+var minFollowers *uint
+var maxFollowers *uint
+
+////////////////////////////////////////
+
 // Whether we are in development mode or not
 var dev *bool
 
@@ -87,6 +100,12 @@ func parseOptions() {
 
 	// my code
 	interval = flag.Uint("interval", 0, "Use this option to follow like and comment every N hours")
+
+	// find blogers
+	findBloger = flag.Bool("find-blogers", false, "Use this option to findBloger")
+	countBlogers = flag.Uint("c", 10, "Use this option to find COUNT blogers")
+	minFollowers = flag.Uint("min", 10000, "Use this option to minFollowers for find bloger")
+	maxFollowers = flag.Uint("max", 50000, "Use this option to maxFollowers for find bloger")
 
 	flag.Parse()
 
@@ -235,7 +254,7 @@ func buildReport() {
 }
 
 //start function on the interval
-func setInterval(someFunc func(), Hours uint) chan bool {
+func setInterval(someFunc func(), Hours uint, stop chan bool) {
 
 	someFunc()
 	// How often to fire the passed in function
@@ -245,7 +264,6 @@ func setInterval(someFunc func(), Hours uint) chan bool {
 	// Setup the ticket and the channel to signal
 	// the ending of the interval
 	ticker := time.NewTicker(interval)
-	stop := make(chan bool)
 
 	// Put the selection in a go routine
 	// so that the for loop is none blocking
@@ -254,7 +272,7 @@ func setInterval(someFunc func(), Hours uint) chan bool {
 
 			select {
 			case <-ticker.C:
-				someFunc()
+				go someFunc()
 			case <-stop:
 				ticker.Stop()
 				return
@@ -265,6 +283,5 @@ func setInterval(someFunc func(), Hours uint) chan bool {
 
 	// We return the channel so we can pass in
 	// a value to it to clear the interval
-	return stop
 
 }

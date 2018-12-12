@@ -273,3 +273,94 @@ func followUser(userInfo response.GetUsernameResponse) {
 		log.Println("Already following " + user.Username)
 	}
 }
+
+// Go through all the tags in the list
+func findBlogers() {
+
+	var blogers []string
+
+	var i = 0
+	for (len(blogers) < int(*countBlogers)) && (i < 5) {
+
+		i++
+		for tag = range tagsList {
+			fmt.Println(tag, *countBlogers, *minFollowers, *maxFollowers)
+
+			var images response.TagFeedsResponse
+			err := retry(10, 5*time.Second, func() (err error) {
+				images, err = insta.TagFeed(tag)
+				return
+			})
+			check(err)
+
+			if len(blogers) >= int(*countBlogers) {
+
+				break
+			}
+
+			for _, image := range images.FeedsResponse.Items {
+				// Exiting the loop if there is nothing left to do
+
+				// Skip our own images
+				if image.User.Username == viper.GetString("user.instagram.username") {
+					continue
+				}
+
+				// Getting the user info
+				// Instagram will return a 500 sometimes, so we will retry 10 times.
+				// Check retry() for more info.
+				var posterInfo response.GetUsernameResponse
+				err := retry(1, 5*time.Second, func() (err error) {
+					posterInfo, err = insta.GetUserByID(image.User.ID)
+					return
+				})
+				check(err)
+
+				poster := posterInfo.User
+				followerCount := poster.FollowerCount
+				yetEquile := false
+				for _, b := range blogers {
+					if b == poster.Username {
+						yetEquile = true
+						break
+					}
+				}
+				if yetEquile {
+					continue
+				}
+
+				// buildLine()
+
+				// Will only follow and comment if we like the picture
+				follow := followerCount > int(*minFollowers) && followerCount < int(*maxFollowers)
+				// fmt.Println(follow, poster.FollowerCount, poster.Username)
+
+				// Like, then comment/follow
+				if follow {
+					blogers = append(blogers, poster.Username)
+					var b string
+					for _, bloger := range blogers {
+						b += bloger + "\n"
+					}
+					ioutil.WriteFile("blogers.txt", []byte(b), 0777)
+
+					log.Printf("%s done\n\n", poster.Username, poster.FollowerCount)
+				}
+
+				if len(blogers) >= int(*countBlogers) {
+					break
+				}
+				// This is to avoid the temporary ban by Instagram
+				time.Sleep(10 * time.Second)
+			}
+		}
+
+	}
+	var b string
+	for _, bloger := range blogers {
+		b += bloger + "\n"
+	}
+	ioutil.WriteFile("blogers.txt", []byte(b), 0777)
+	fmt.Println("Было найдено ", len(blogers), " блогеров")
+
+}

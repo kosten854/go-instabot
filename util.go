@@ -19,6 +19,9 @@ func printLol() {
 
 var interval *uint
 
+// Config path default "config"
+var cnfg string
+
 // Whether we are in development mode or not
 var dev *bool
 
@@ -87,6 +90,7 @@ func parseOptions() {
 
 	// my code
 	interval = flag.Uint("interval", 0, "Use this option to follow like and comment every N hours")
+	flag.StringVar(&cnfg, "config", "config", "a string var")
 
 	flag.Parse()
 
@@ -105,8 +109,8 @@ func parseOptions() {
 }
 
 // Gets the conf in the config file
-func getConfig() {
-	folder := "config"
+func getConfig(config string) {
+	folder := config
 	if *dev {
 		folder = "local"
 	}
@@ -235,7 +239,7 @@ func buildReport() {
 }
 
 //start function on the interval
-func setInterval(someFunc func(), Hours uint) chan bool {
+func setInterval(someFunc func(), Hours uint, stop chan bool) {
 
 	someFunc()
 	// How often to fire the passed in function
@@ -245,7 +249,6 @@ func setInterval(someFunc func(), Hours uint) chan bool {
 	// Setup the ticket and the channel to signal
 	// the ending of the interval
 	ticker := time.NewTicker(interval)
-	stop := make(chan bool)
 
 	// Put the selection in a go routine
 	// so that the for loop is none blocking
@@ -254,7 +257,7 @@ func setInterval(someFunc func(), Hours uint) chan bool {
 
 			select {
 			case <-ticker.C:
-				someFunc()
+				go someFunc()
 			case <-stop:
 				ticker.Stop()
 				return
@@ -265,6 +268,5 @@ func setInterval(someFunc func(), Hours uint) chan bool {
 
 	// We return the channel so we can pass in
 	// a value to it to clear the interval
-	return stop
 
 }

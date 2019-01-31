@@ -9,7 +9,7 @@ func main() {
 	parseOptions()
 
 	// Gets the config
-	getConfig()
+	getConfig(cnfg)
 
 	// Tries to login
 	login()
@@ -24,7 +24,9 @@ func main() {
 		} else { // From interval
 
 			// Start interval
-			stop := setInterval(loopTags, *interval)
+
+			stop := make(chan bool)
+			go setInterval(loopTags, *interval, stop)
 
 			// Stop control
 			for {
